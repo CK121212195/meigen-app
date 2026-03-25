@@ -4,57 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>名言・格言365選</title>
-  
-  <!-- 💡魔法のタグ：Googleのサーバーへ事前に接続準備をして少しでも速くする -->
-  <link rel="preconnect" href="https://script.google.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Playfair+Display:ital,wght@0,400;1,600&display=swap" rel="stylesheet">
   
   <style>
-    body, html {
+    body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      overflow: hidden;
+      font-family: 'Noto Sans JP', sans-serif;
       background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
       display: flex;
       justify-content: center;
       align-items: center;
+      min-height: 100vh;
+      color: #333;
     }
-    
-    /* 💡追加：読み込み中の「くるくる」アニメーション */
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 50px 40px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+      max-width: 600px;
+      width: 85%;
+      text-align: center;
+      position: relative;
+    }
+    .english-quote {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: #2c3e50;
+      margin-bottom: 25px;
+      font-style: italic;
+      line-height: 1.4;
+      transition: opacity 0.5s ease;
+    }
+    .japanese-quote {
+      font-size: 1.1rem;
+      color: #7f8c8d;
+      margin-bottom: 40px;
+      line-height: 1.6;
+      transition: opacity 0.5s ease;
+    }
+    .btn {
+      background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 500;
+      box-shadow: 0 8px 20px rgba(33, 147, 176, 0.3);
+      outline: none;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(33, 147, 176, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
     .loader {
-      border: 4px solid rgba(0, 0, 0, 0.05);
-      border-top: 4px solid #2193b0;
+      display: none;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #2193b0;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 24px;
+      height: 24px;
       animation: spin 1s linear infinite;
+      margin: 0 auto;
       position: absolute;
-      z-index: 1; /* 裏側に配置 */
+      bottom: 25px;
+      left: calc(50% - 12px);
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-      position: relative;
-      z-index: 2;
-      opacity: 0; /* 最初は透明にして隠しておく */
-      transition: opacity 0.8s ease; /* ふわっと表示させる */
-    }
+    .fade { opacity: 0; }
   </style>
 </head>
 <body>
 
-  <!-- くるくるアニメーションの表示 -->
-  <div class="loader"></div>
+  <div class="card">
+    <div id="quote-area">
+      <!-- 最初は透明（fade）にしておく -->
+      <div class="english-quote fade" id="english"></div>
+      <div class="japanese-quote fade" id="japanese"></div>
+    </div>
+    
+    <!-- 最初はボタンを隠し、ローディングを出しておく -->
+    <button class="btn" id="btn" onclick="fetchNewQuote()" style="visibility: hidden;">別の名言に出会う</button>
+    <div class="loader" id="loader" style="display: block;"></div>
+  </div>
 
-  <!-- ↓ ここにGASのURLを貼り付けます（onloadで読み込み完了時にふわっと表示） -->
-  <iframe src="https://script.google.com/macros/s/AKfycby_lLf3c2AD6-gB2A2ceSDanXUbo0CGwKeWL7lZ2VDKVuzMxMQl9ZJiKQ6tpr2Ikdej/exec" onload="this.style.opacity=1"></iframe>
+  <script>
+    // ★↓↓↓ ここにご自身のGASのURL（https://script.google.com/macros/s/〜）を貼り付けてください ↓↓↓★
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby_lLf3c2AD6-gB2A2ceSDanXUbo0CGwKeWL7lZ2VDKVuzMxMQl9ZJiKQ6tpr2Ikdej/exec";
 
+    // 画面が開かれた瞬間にデータを取得しにいく
+    window.onload = function() {
+      fetchNewQuote();
+    };
+
+    function fetchNewQuote() {
+      const btn = document.getElementById('btn');
+      const loader = document.getElementById('loader');
+      const englishEl = document.getElementById('english');
+      const japaneseEl = document.getElementById('japanese');
+
+      // 文字をフェードアウト
+      englishEl.classList.add('fade');
+      japaneseEl.classList.add('fade');
+      
+      // ボタンを隠してローディングを表示
+      btn.style.visibility = 'hidden';
+      loader.style.display = 'block';
+
+      // 裏側でGoogleから名言の文字データ"だけ"を高速で取得
+      fetch(GAS_URL)
+        .then(response => response.json())
+        .then(quote => {
+          setTimeout(() => {
+            englishEl.innerText = quote.english;
+            japaneseEl.innerText = quote.japanese;
+            
+            // ふわっと表示
+            englishEl.classList.remove('fade');
+            japaneseEl.classList.remove('fade');
+            
+            loader.style.display = 'none';
+            btn.style.visibility = 'visible';
+          }, 400);
+        })
+        .catch(error => {
+          // 万が一エラーになった時の処理
+          englishEl.innerText = "エラーが発生しました";
+          japaneseEl.innerText = "通信環境を確認してもう一度お試しください";
+          englishEl.classList.remove('fade');
+          japaneseEl.classList.remove('fade');
+          loader.style.display = 'none';
+          btn.style.visibility = 'visible';
+        });
+    }
+  </script>
 </body>
 </html>
